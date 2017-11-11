@@ -138,7 +138,7 @@ cd "$tempdir" || die "Cannot cd to temp dir."
 
 newpage_pdf="$( basename "$newpage" .pdf ).pdf"
 #echo "$newpage_pdf"
-convert -page a4 "$newpage" "$newpage_pdf" || die "Cannot convert page to PDF"
+convert -page a4 -density 72 "$newpage" "$newpage_pdf" || die "Cannot convert page to PDF"
 
 output_pdf="$( basename "$pdf" .pdf )-mod.pdf"
 #echo "$output_pdf"
