@@ -75,13 +75,13 @@ write_config()
 read_config
 
 zenity \
-    --info --title "Add/Replace Pages in PDF" \
-    --text="The program performs adding/replacing pages in PDF files\n\n\
-Press OK to continue"
+    --info --title "Добавление/замена страниц в PDF" \
+    --text="Эта программа предназначена для добавления/замены страниц в PDF.\n\n\
+Нажмите ОК для продолжения"
 
 pdf=$( zenity \
            --file-selection \
-           --title="Source PDF file" \
+           --title="Выберите исходный PDF файл" \
            --file-filter='*.pdf *.PDF' \
            --filename="$last_dir" )
 
@@ -89,9 +89,9 @@ case $? in
     0)
         echo "\"$pdf\" selected as original pdf.";;
     1)
-        goodbye "No file selected";;
+        goodbye "Вы не выбрали файл";;
     -1)
-        die "Error selecting file";;
+        die "Ошибка при выборе файла";;
 esac
 
 newpage_dir="$( dirname "$pdf" )/"
@@ -99,7 +99,7 @@ newpage_dir="$( dirname "$pdf" )/"
 newpage=$( \
     zenity \
         --file-selection \
-        --title="File containing new page(s) (JPG or PDF, JPG is preferred)" \
+        --title="Файл с новой страницей (JPG или PDF, лучше - JPG)" \
         --file-filter='*.pdf *.PDF *.jpg *.JPG *.jpeg *.JPEG *.png *.PNG' \
         --filename="$newpage_dir" )
 
@@ -107,9 +107,9 @@ case $? in
     0)
         echo "\"$newpage\" selected as new page.";;
     1)
-        goodbye "No file selected";;
+        goodbye "Вы не выбрали файл";;
     -1)
-        die "Error selecting file";;
+        die "Ошибка при выборе файла";;
 esac
 
 pages_total=$( pdftk "$pdf" dump_data | grep NumberOfPages | sed 's/[^0-9]*//' )
@@ -117,19 +117,19 @@ pages_total=$( pdftk "$pdf" dump_data | grep NumberOfPages | sed 's/[^0-9]*//' )
 
 pageindex=$( \
     zenity \
-        --entry --title="Page index" \
-        --text="Index of the page to replace\n\n\
-0 - insert in the front; (number of pages + 1) - append to the back\n\n\
-Source PDF contains $pages_total pages.\n" \
+        --entry --title="Номер страницы" \
+        --text="Номер страницы, которую нужно заменить\n\n\
+0 - вставить перед всеми; (кол-во страниц + 1) - добавить в конец\n\n\
+Всего в исходном документе $pages_total страниц.\n" \
         --entry-text "1" )
 
 case $? in
     0)
         echo "\"$pageindex\" entered as page number.";;
     1)
-        goodbye "No page index selected.";;
+        goodbye "Вы не указали номер страницы";;
     -1)
-        die "Error selecting page index.";;
+        die "Ошибка при выборе номера страницы";;
 esac
 
 tempdir=$( mktemp -d )
@@ -138,7 +138,7 @@ cd "$tempdir" || die "Cannot cd to temp dir."
 
 newpage_pdf="$( basename "$newpage" .pdf ).pdf"
 #echo "$newpage_pdf"
-convert -page a4 -density 72 "$newpage" "$newpage_pdf" || die "Cannot convert page to PDF"
+convert -page a4 -density 72 "$newpage" "$newpage_pdf" || die "Не получилось преобразовать страницу в PDF"
 
 output_pdf="$( basename "$pdf" .pdf )-mod.pdf"
 #echo "$output_pdf"
@@ -152,21 +152,21 @@ then
     pdftk A="$newpage_pdf" B="$pdf" \
           cat B1-$cut_start A1 B$cut_end-end \
           output "$output_pdf" \
-        || die "Merging has failed"
+        || die "Что-то пошло не так при объединении документа"
 else
     if [ $cut_start -lt 1 ]
     then
         pdftk A="$newpage_pdf" B="$pdf" \
               cat A1 B$cut_end-end \
               output "$output_pdf" \
-            || die "Merging has failed"
+            || die "Что-то пошло не так при объединении документа"
     fi
     if [ $cut_end -gt $pages_total ]
     then
         pdftk A="$newpage_pdf" B="$pdf" \
               cat B1-$cut_start A1 \
               output "$output_pdf" \
-            || die "Merging has failed"
+            || die "Что-то пошло не так при объединении документа"
     fi
 fi
 
@@ -176,7 +176,7 @@ do
 $( basename "$pdf" .pdf )-$( date +"%Y%m%d_%H%M%S" ).pdf"
     output_pdf_real=$( \
         zenity \
-            --file-selection --title="Save result as" \
+            --file-selection --title="Сохранить результат как" \
             --file-filter='*.pdf *.PDF' \
             --filename="$output_pdf_real_default" \
             --save )
@@ -185,19 +185,19 @@ $( basename "$pdf" .pdf )-$( date +"%Y%m%d_%H%M%S" ).pdf"
         0)
             echo "\"$output_pdf_real\" selected as destination.";;
         1)
-            goodbye "No file selected";;
+            goodbye "Вы не выбрали файл";;
         -1)
-            die "Error selecting file";;
+            die "Ошибка при выборе файла";;
     esac
 
     if [ -e "$output_pdf_real" ]
     then
         if zenity \
                --question \
-               --text="File $output_pdf_real already exists.\n\n\
-Do you really want to replace it?" \
-               --ok-label="Yes. Replace it, please." \
-               --cancel-label="No! I still need it.";
+               --text="Файл $output_pdf_real уже существует. \
+Вы действительно хотите его перезаписать?" \
+               --ok-label="Да. Перезаписывай." \
+               --cancel-label="Нет! Он мне ещё нужен.";
         then
             break
         fi
@@ -206,7 +206,7 @@ Do you really want to replace it?" \
     fi
 done
 
-mv "$output_pdf" "$output_pdf_real" || die "Cannot save the result"
+mv "$output_pdf" "$output_pdf_real" || die "Не получилось сохранить результат"
 
 rm "$newpage_pdf" || die "Cannot remove temporary files."
 rmdir "$tempdir" || die "Cannot remove temporary directory."
@@ -216,5 +216,5 @@ last_dir="$newpage_dir"
 write_config
 
 zenity \
-    --info --title "Success!" \
-    --text="It seems that all is success! Press OK and check the result."
+    --info --title "Завершено успешно!" \
+    --text="Похоже, что всё получилось! Нажмите OK и проверьте результат."
