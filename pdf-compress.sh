@@ -74,13 +74,13 @@ write_config()
 read_config
 
 zenity \
-    --info --title "Reduce PDF file size" \
-    --text="The program reduces PDF file size\n\n\
-Press OK to continue"
+    --info --title "Уменьшение размера PDF" \
+    --text="Эта программа предназначена для уменьшения размера PDF.\n\n\
+Нажмите ОК для продолжения"
 
 pdf=$( zenity \
            --file-selection \
-           --title="Source PDF file" \
+           --title="Выберите исходный PDF файл" \
            --file-filter='*.pdf *.PDF' \
            --filename="$last_dir" )
 
@@ -88,27 +88,27 @@ case $? in
     0)
         echo "\"$pdf\" selected as original pdf.";;
     1)
-        goodbye "No file selected";;
+        goodbye "Вы не выбрали файл";;
     -1)
-        die "Error selecting file";;
+        die "Ошибка при выборе файла";;
 esac
 
 source_pdf_dir="$( dirname "$pdf" )/"
 
 img_resolution=$( \
     zenity \
-        --entry --title="Desired resolution of raster images" \
-        --text="Desired resolution of raster images\n\n\
-60 - bad quality; 300 - sufficient for printing\n" \
+        --entry --title="Желаемое разрешение растровых изображений" \
+        --text="Желаемое разрешение растровых изображений\n\n\
+60 - плохое качество; 300 - достаточно для печати\n" \
         --entry-text "150" )
 
 case $? in
     0)
         echo "\"$img_resolution\" entered as image resolution.";;
     1)
-        goodbye "No resolution specified";;
+        goodbye "Вы не указали разрешение";;
     -1)
-        die "Error selecting resolution";;
+        die "Ошибка при вводе разрешения";;
 esac
 
 tempdir=$( mktemp -d )
@@ -142,7 +142,7 @@ do
 $( basename "$pdf" .pdf )-$( date +"%Y%m%d_%H%M%S" ).pdf"
     output_pdf_real=$( \
         zenity \
-            --file-selection --title="Save result as" \
+            --file-selection --title="Сохранить результат как" \
             --file-filter='*.pdf *.PDF' \
             --filename="$output_pdf_real_default" \
             --save )
@@ -151,19 +151,19 @@ $( basename "$pdf" .pdf )-$( date +"%Y%m%d_%H%M%S" ).pdf"
         0)
             echo "\"$output_pdf_real\" selected as destination.";;
         1)
-            goodbye "No file selected";;
+            goodbye "Вы не выбрали файл";;
         -1)
-            die "Error selecting file";;
+            die "Ошибка при выборе файла";;
     esac
 
     if [ -e "$output_pdf_real" ]
     then
         if zenity \
                --question \
-               --text="File $output_pdf_real already exists.\n\n\
-Do you really want to replace it?" \
-               --ok-label="Yes. Replace it, please." \
-               --cancel-label="No! I still need it.";
+               --text="Файл $output_pdf_real уже существует. \
+Вы действительно хотите его перезаписать?" \
+               --ok-label="Да. Перезаписывай." \
+               --cancel-label="Нет! Он мне ещё нужен.";
         then
             break
         fi
@@ -172,7 +172,7 @@ Do you really want to replace it?" \
     fi
 done
 
-mv "$compressed_pdf" "$output_pdf_real" || die "Cannot save the result"
+mv "$compressed_pdf" "$output_pdf_real" || die "Не получилось сохранить результат"
 
 rmdir "$tempdir" || die "Cannot remove temporary directory."
 
@@ -181,5 +181,5 @@ last_dir="$source_pdf_dir"
 write_config
 
 zenity \
-    --info --title "Success!" \
-    --text="It seems that all is success! Press OK and check the result."
+    --info --title "Завершено успешно!" \
+    --text="Похоже, что всё получилось! Нажмите OK и проверьте результат."
