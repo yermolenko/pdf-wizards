@@ -71,6 +71,32 @@ write_config()
     echo "last_dir:$last_dir" > $CONF_FILE
 }
 
+compress_pdf_via_gs()
+{
+    local pdf=${1:?"unspecified input pdf file name"}
+    local compressed_pdf=${2:?"unspecified output pdf file name"}
+    local img_resolution=${3:?"150"}
+
+    gs \
+        -dNOPAUSE -dBATCH -dSAFER \
+        -sDEVICE=pdfwrite \
+        -dCompatibilityLevel=1.4 \
+        -dPDFSETTINGS=/screen \
+        -dEmbedAllFonts=true \
+        -dSubsetFonts=true \
+        -dAutoRotatePages=/None \
+        -dDownsampleColorImages=true \
+        -dColorImageDownsampleType=/Bicubic	\
+        -dColorImageResolution="$img_resolution" \
+        -dGrayImageDownsampleType=/Bicubic \
+        -dGrayImageResolution="$img_resolution" \
+        -dMonoImageDownsampleType=/Bicubic \
+        -dMonoImageResolution="$img_resolution" \
+        -sOutputFile="$compressed_pdf" "$pdf" \
+        | zenity --progress --pulsate --auto-close --title="PDF Compress" \
+        || die "Cannot compress PDF using Ghostscript"
+}
+
 read_config
 
 zenity \
@@ -95,46 +121,116 @@ esac
 
 source_pdf_dir="$( dirname "$pdf" )/"
 
-img_resolution=$( \
-    zenity \
-        --entry --title="Desired resolution of raster images" \
-        --text="Desired resolution of raster images\n\n\
-60 - bad quality; 300 - sufficient for printing\n" \
-        --entry-text "150" )
-
-case $? in
-    0)
-        echo "\"$img_resolution\" entered as image resolution.";;
-    1)
-        goodbye "No resolution specified";;
-    -1)
-        die "Error selecting resolution";;
-esac
-
 tempdir=$( mktemp -d )
 
 cd "$tempdir" || die "Cannot cd to temp dir."
 
 compressed_pdf="$( basename "$pdf" .pdf )-compressed.pdf"
-#echo "$compressed_pdf"
 
-gs \
-    -dNOPAUSE -dBATCH -dSAFER \
-    -sDEVICE=pdfwrite \
-    -dCompatibilityLevel=1.4 \
-    -dPDFSETTINGS=/screen \
-    -dEmbedAllFonts=true \
-    -dSubsetFonts=true \
-    -dAutoRotatePages=/None \
-    -dDownsampleColorImages=true \
-    -dColorImageDownsampleType=/Bicubic	\
-    -dColorImageResolution="$img_resolution" \
-    -dGrayImageDownsampleType=/Bicubic \
-    -dGrayImageResolution="$img_resolution" \
-    -dMonoImageDownsampleType=/Bicubic \
-    -dMonoImageResolution="$img_resolution" \
-    -sOutputFile="$compressed_pdf" "$pdf" \
-    || die "Не получилось сжать PDF"
+if zenity \
+       --question \
+       --text="Do you want to shrink the file to a specific size?" \
+       --ok-label="Yes. I want to set the size" \
+       --cancel-label="No. I want more options";
+then
+    desired_file_size_in_kb=$( \
+        zenity \
+            --entry --title="Desired file size" \
+            --text="Desired file size in kibibytes" \
+            --entry-text "975" )
+
+    case $? in
+        0)
+            echo "\"$desired_file_size_in_kb\" entered as desired file size in kibibytes.";;
+        1)
+            goodbye "No file size specified";;
+        -1)
+            die "Error selecting file size";;
+    esac
+
+    orig_file_size_kb=$(du -k "$pdf" | cut -f1)
+    [ $orig_file_size_kb -lt $desired_file_size_in_kb ] && \
+        goodbye "The file is alredy small enough"
+
+    img_resolution1=20
+    img_resolution2=600
+    img_resolution=1
+
+    iterations_limit=20
+    iterations=0
+
+    while true
+    do
+        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution2"
+        file_size_kb2=$(du -k "$compressed_pdf" | cut -f1)
+
+        [ $file_size_kb2 -lt $desired_file_size_in_kb ] && \
+            { img_resolution=$img_resolution2; break; }
+
+        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution1"
+        file_size_kb1=$(du -k "$compressed_pdf" | cut -f1)
+
+        img_resolution3=$(( ( $img_resolution1 + $img_resolution2 ) / 2 ))
+
+        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution3"
+        file_size_kb3=$(du -k "$compressed_pdf" | cut -f1)
+
+        echo "Iteration: $iterations"
+        echo "Raster image resolutions and file sizes:"
+        echo "$img_resolution1 dpi : $file_size_kb1 KiB"
+        echo "$img_resolution2 dpi : $file_size_kb2 KiB"
+        echo "$img_resolution3 dpi : $file_size_kb3 KiB"
+
+        [ $file_size_kb1 -lt $desired_file_size_in_kb ] && \
+            [ $img_resolution1 -gt $img_resolution ] && \
+            img_resolution=$img_resolution1 && \
+            [ $(( ( $desired_file_size_in_kb - $file_size_kb1 ) * 100 )) -lt $(( $desired_file_size_in_kb * 7 )) ] && \
+            break
+
+        [ $file_size_kb2 -lt $desired_file_size_in_kb ] && \
+            [ $img_resolution2 -gt $img_resolution ] && \
+            img_resolution=$img_resolution2 && \
+            [ $(( ( $desired_file_size_in_kb - $file_size_kb2 ) * 100 )) -lt $(( $desired_file_size_in_kb * 7 )) ] && \
+            break
+
+        [ $file_size_kb3 -lt $desired_file_size_in_kb ] && \
+            [ $img_resolution3 -gt $img_resolution ] && \
+            img_resolution=$img_resolution3 && \
+            [ $(( ( $desired_file_size_in_kb - $file_size_kb3 ) * 100 )) -lt $(( $desired_file_size_in_kb * 7 )) ] && \
+            break
+
+        [ $file_size_kb3 -lt $desired_file_size_in_kb ] && \
+            img_resolution1=$img_resolution3 || \
+                img_resolution2=$img_resolution3
+
+        iterations=$(( $iterations + 1 ))
+        [ $iterations -gt $iterations_limit ] && break
+    done
+
+    compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution"
+    resulted_file_size_kb=$(du -k "$compressed_pdf" | cut -f1)
+    [ $resulted_file_size_kb -gt $desired_file_size_in_kb ] && \
+        die "Cannot achieve the desired size"
+    echo "\"$img_resolution\" selected as image resolution."
+else
+    img_resolution=$( \
+        zenity \
+            --entry --title="Desired resolution of raster images" \
+            --text="Desired resolution of raster images\n\n\
+60 - bad quality; 300 - sufficient for printing\n" \
+            --entry-text "150" )
+
+    case $? in
+        0)
+            echo "\"$img_resolution\" entered as image resolution.";;
+        1)
+            goodbye "No resolution specified";;
+        -1)
+            die "Error selecting resolution";;
+    esac
+
+    compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution"
+fi
 
 while true
 do
