@@ -94,7 +94,7 @@ compress_pdf_via_gs()
         -dMonoImageResolution="$img_resolution" \
         -sOutputFile="$compressed_pdf" "$pdf" \
         | zenity --progress --pulsate --auto-close --title="PDF Compress" \
-        || die "Cannot compress PDF using Ghostscript"
+        || die "Не могу сжать PDF с использованием Ghostscript"
 }
 
 read_config
@@ -129,28 +129,28 @@ compressed_pdf="$( basename "$pdf" .pdf )-compressed.pdf"
 
 if zenity \
        --question \
-       --text="Do you want to shrink the file to a specific size?" \
-       --ok-label="Yes. I want to set the size" \
-       --cancel-label="No. I want more options";
+       --text="Сжать файл до определённого размера?" \
+       --ok-label="Да. Я хочу указать размер" \
+       --cancel-label="Нет. Мне нужно больше опций";
 then
     desired_file_size_in_kb=$( \
         zenity \
-            --entry --title="Desired file size" \
-            --text="Desired file size in kibibytes" \
+            --entry --title="Желаемый размер файла" \
+            --text="Желаемый размер в кибибайтах" \
             --entry-text "975" )
 
     case $? in
         0)
             echo "\"$desired_file_size_in_kb\" entered as desired file size in kibibytes.";;
         1)
-            goodbye "No file size specified";;
+            goodbye "Вы не указали размер файла";;
         -1)
-            die "Error selecting file size";;
+            die "Ошибка при выборе размера файла";;
     esac
 
     orig_file_size_kb=$(du -k "$pdf" | cut -f1)
     [ $orig_file_size_kb -lt $desired_file_size_in_kb ] && \
-        goodbye "The file is alredy small enough"
+        goodbye "Файл уже достаточно малого размера"
 
     img_resolution1=20
     img_resolution2=600
@@ -210,23 +210,23 @@ then
     compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution"
     resulted_file_size_kb=$(du -k "$compressed_pdf" | cut -f1)
     [ $resulted_file_size_kb -gt $desired_file_size_in_kb ] && \
-        die "Cannot achieve the desired size"
+        die "Не могу достичь желаемого размера файла"
     echo "\"$img_resolution\" selected as image resolution."
 else
     img_resolution=$( \
         zenity \
-            --entry --title="Desired resolution of raster images" \
-            --text="Desired resolution of raster images\n\n\
-60 - bad quality; 300 - sufficient for printing\n" \
+            --entry --title="Желаемое разрешение растровых изображений" \
+            --text="Желаемое разрешение растровых изображений\n\n\
+60 - плохое качество; 300 - достаточно для печати\n" \
             --entry-text "150" )
 
     case $? in
         0)
             echo "\"$img_resolution\" entered as image resolution.";;
         1)
-            goodbye "No resolution specified";;
+            goodbye "Вы не указали разрешение";;
         -1)
-            die "Error selecting resolution";;
+            die "Ошибка при вводе разрешения";;
     esac
 
     compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution"
