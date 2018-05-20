@@ -37,6 +37,14 @@ goodbye()
     exit 1
 }
 
+warning()
+{
+    local msg=${1:-"Info"}
+    hash zenity 2>/dev/null && \
+        zenity --warning --title "Warning!" --text "$msg"
+    echo "WARNING: $msg" 1>&2
+}
+
 require()
 {
     local cmd=${1:?"Command name is required"}
@@ -75,7 +83,8 @@ compress_pdf_via_gs()
 {
     local pdf=${1:?"unspecified input pdf file name"}
     local compressed_pdf=${2:?"unspecified output pdf file name"}
-    local img_resolution=${3:?"150"}
+    local img_resolution=${3:-"150"}
+    local extra_info=${4:-"Changing resolution to $img_resolution dpi"}
 
     gs \
         -dNOPAUSE -dBATCH -dSAFER \
@@ -94,7 +103,7 @@ compress_pdf_via_gs()
         -dMonoImageResolution="$img_resolution" \
         -sOutputFile="$compressed_pdf" "$pdf" \
         | zenity --progress --pulsate --auto-close --title="PDF Compress" \
-        || die "Не могу сжать PDF с использованием Ghostscript"
+                 --text="$extra_info"
 }
 
 read_config
@@ -161,18 +170,18 @@ then
 
     while true
     do
-        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution2"
+        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution2" || break
         file_size_kb2=$(du -k "$compressed_pdf" | cut -f1)
 
         [ $file_size_kb2 -lt $desired_file_size_in_kb ] && \
             { img_resolution=$img_resolution2; break; }
 
-        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution1"
+        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution1" || break
         file_size_kb1=$(du -k "$compressed_pdf" | cut -f1)
 
         img_resolution3=$(( ( $img_resolution1 + $img_resolution2 ) / 2 ))
 
-        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution3"
+        compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution3" || break
         file_size_kb3=$(du -k "$compressed_pdf" | cut -f1)
 
         echo "Iteration: $iterations"
@@ -207,10 +216,12 @@ then
         [ $iterations -gt $iterations_limit ] && break
     done
 
-    compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution"
+    compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution" \
+                        "Finalizing with $img_resolution dpi. Please wait..." \
+        || die "Cannot produce the result"
     resulted_file_size_kb=$(du -k "$compressed_pdf" | cut -f1)
     [ $resulted_file_size_kb -gt $desired_file_size_in_kb ] && \
-        die "Не могу достичь желаемого размера файла"
+        warning "Не могу достичь желаемого размера файла"
     echo "\"$img_resolution\" selected as image resolution."
 else
     img_resolution=$( \
