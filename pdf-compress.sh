@@ -84,7 +84,7 @@ compress_pdf_via_gs()
     local pdf=${1:?"unspecified input pdf file name"}
     local compressed_pdf=${2:?"unspecified output pdf file name"}
     local img_resolution=${3:-"150"}
-    local extra_info=${4:-"Changing resolution to $img_resolution dpi"}
+    local extra_info=${4:-"Изменяю разрешение на $img_resolution dpi"}
 
     gs \
         -dNOPAUSE -dBATCH -dSAFER \
@@ -217,7 +217,7 @@ then
     done
 
     compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution" \
-                        "Finalizing with $img_resolution dpi. Please wait..." \
+                        "Завершаю с разрешением $img_resolution dpi. Пожалуйста, подождите..." \
         || die "Cannot produce the result"
     resulted_file_size_kb=$(du -k "$compressed_pdf" | cut -f1)
     [ $resulted_file_size_kb -gt $desired_file_size_in_kb ] && \
