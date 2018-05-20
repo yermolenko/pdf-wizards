@@ -83,7 +83,7 @@ compress_pdf_via_gs()
 {
     local pdf=${1:?"unspecified input pdf file name"}
     local compressed_pdf=${2:?"unspecified output pdf file name"}
-    local img_resolution=${3:?"150"}
+    local img_resolution=${3:-"150"}
 
     gs \
         -dNOPAUSE -dBATCH -dSAFER \
