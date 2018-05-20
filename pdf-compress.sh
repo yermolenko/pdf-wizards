@@ -37,6 +37,14 @@ goodbye()
     exit 1
 }
 
+warning()
+{
+    local msg=${1:-"Info"}
+    hash zenity 2>/dev/null && \
+        zenity --warning --title "Warning!" --text "$msg"
+    echo "WARNING: $msg" 1>&2
+}
+
 require()
 {
     local cmd=${1:?"Command name is required"}
@@ -210,7 +218,7 @@ then
     compress_pdf_via_gs "$pdf" "$compressed_pdf" "$img_resolution"
     resulted_file_size_kb=$(du -k "$compressed_pdf" | cut -f1)
     [ $resulted_file_size_kb -gt $desired_file_size_in_kb ] && \
-        die "Cannot achieve the desired size"
+        warning "Cannot achieve the desired size"
     echo "\"$img_resolution\" selected as image resolution."
 else
     img_resolution=$( \
