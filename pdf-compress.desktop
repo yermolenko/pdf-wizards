@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Reduce PDF file size
+Name[ru]=Уменьшение размера PDF
+Comment=The program reduces PDF file size
+Comment[ru]=Эта программа предназначена для уменьшения размера PDF
+Exec=pdf-compress.sh
+Icon=evince
+#Terminal=true
+Type=Application

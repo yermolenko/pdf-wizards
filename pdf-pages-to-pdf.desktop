@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Combine Pages in PDF
+Name[ru]=Создание PDF из набора страниц
+Comment=The program produces PDF files from sets of invidivual pages
+Comment[ru]=Эта программа предназначена для создания PDF из наборов страниц
+Exec=pdf-pages-to-pdf.sh
+Icon=evince
+#Terminal=true
+Type=Application
