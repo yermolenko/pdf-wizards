@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Replace/Add Pages in PDF
+Name[ru]=Замена/добавление страниц в PDF
+Comment=The program performs adding/replacing pages in PDF files
+Comment[ru]=Эта программа предназначена для добавления/замены страниц в PDF
+Exec=pdf-replace-page.sh
+Icon=evince
+#Terminal=true
+Type=Application
