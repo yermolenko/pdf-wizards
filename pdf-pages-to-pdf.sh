@@ -76,23 +76,23 @@ write_config()
 read_config
 
 zenity \
-    --info --title "Combine Pages in PDF" \
-    --text="The program produces PDF files from sets of invidivual pages\n\n\
-Press OK to continue"
+    --info --title "Создание PDF из набора страниц" \
+    --text="Эта программа предназначена для создания PDF из наборов страниц\n\n\
+Нажмите ОК для продолжения"
 
 pages_dir=$( zenity \
                  --file-selection \
                  --directory \
-                 --title="Directory with pages" \
+                 --title="Каталог с файлами страниц" \
                  --filename="$last_dir/" )
 
 case $? in
     0)
         echo "\"$pages_dir\" selected as pages directory.";;
     1)
-        goodbye "No directory selected";;
+        goodbye "Вы не выбрали каталог";;
     -1)
-        die "Error selecting directory";;
+        die "Ошибка при выборе каталога";;
 esac
 
 pagefiles=()
@@ -104,15 +104,15 @@ done < <(
          -printf 'TRUE\n%f\n' | \
         zenity --list --checklist \
                --height=480 \
-               --title "Select Files with Pages" \
-               --text "Select files with pages to be included in the resulting PDF" \
-               --column "Include" \
-               --column "Filename" \
+               --title "Выбор файлов со страницами" \
+               --text "Выберите файлы со страницами для включения в конечный PDF" \
+               --column "Включить" \
+               --column "Имя файла" \
                --separator="\n"
 )
 # echo "${pagefiles[@]}"
 
-[ ${#pagefiles[@]} -eq 0 ] && goodbye "No files with pages selected"
+[ ${#pagefiles[@]} -eq 0 ] && goodbye "Не выбраны страницы для включения в PDF"
 
 tempdir=$( mktemp -d )
 
@@ -144,7 +144,7 @@ do
 $( basename "$pages_dir" .pdf )-$( date +"%Y%m%d_%H%M%S" ).pdf"
     output_pdf_real=$( \
         zenity \
-            --file-selection --title="Save result as" \
+            --file-selection --title="Сохранить результат как" \
             --file-filter='*.pdf *.PDF' \
             --filename="$output_pdf_real_default" \
             --save )
@@ -153,19 +153,19 @@ $( basename "$pages_dir" .pdf )-$( date +"%Y%m%d_%H%M%S" ).pdf"
         0)
             echo "\"$output_pdf_real\" selected as destination.";;
         1)
-            goodbye "No file selected";;
+            goodbye "Вы не выбрали файл";;
         -1)
-            die "Error selecting file";;
+            die "Ошибка при выборе файла";;
     esac
 
     if [ -e "$output_pdf_real" ]
     then
         if zenity \
                --question \
-               --text="File $output_pdf_real already exists.\n\n\
-Do you really want to replace it?" \
-               --ok-label="Yes. Replace it, please." \
-               --cancel-label="No! I still need it.";
+               --text="Файл $output_pdf_real уже существует. \
+Вы действительно хотите его перезаписать?" \
+               --ok-label="Да. Перезаписывай." \
+               --cancel-label="Нет! Он мне ещё нужен.";
         then
             break
         fi
@@ -174,7 +174,7 @@ Do you really want to replace it?" \
     fi
 done
 
-mv "$output_pdf" "$output_pdf_real" || die "Cannot save the result"
+mv "$output_pdf" "$output_pdf_real" || die "Не получилось сохранить результат"
 
 for pagefile_pdf in "${pagefile_pdfs[@]}"
 do
@@ -187,5 +187,5 @@ last_dir="$pages_dir"
 write_config
 
 zenity \
-    --info --title "Success!" \
-    --text="It seems that all is success! Press OK and check the result."
+    --info --title "Завершено успешно!" \
+    --text="Похоже, что всё получилось! Нажмите OK и проверьте результат."
