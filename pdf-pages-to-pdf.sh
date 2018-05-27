@@ -21,6 +21,7 @@
 
 die()
 {
+    gui_wait_notice_end
     local msg=${1:-"Unknown error"}
     hash zenity 2>/dev/null && \
         zenity --error --title "Error" --text "ERROR: $msg"
@@ -30,11 +31,29 @@ die()
 
 goodbye()
 {
+    gui_wait_notice_end
     local msg=${1:-"Cancelled by user"}
     hash zenity 2>/dev/null && \
         zenity --warning --title "Goodbye!" --text "$msg"
     echo "INFO: $msg" 1>&2
     exit 1
+}
+
+gui_wait_notice_start()
+{
+    yes | zenity --progress --pulsate --no-cancel --auto-close --title "PDF Wizard" --text="Please wait...\n" &
+    gui_pid=$!
+    echo "gui_pid : $gui_pid"
+}
+
+gui_wait_notice_end()
+{
+    gui_name_by_pid=$( ps -p $gui_pid -o comm= )
+    echo "gui_name_by_pid : $gui_name_by_pid"
+    if [ "x$gui_name_by_pid" = "xzenity" ]
+    then
+        kill $gui_pid
+    fi
 }
 
 require()
@@ -118,6 +137,8 @@ tempdir=$( mktemp -d )
 
 cd "$tempdir" || die "Cannot cd to temp dir."
 
+gui_wait_notice_start
+
 pagefile_pdfs=()
 for pagefile in "${pagefiles[@]}"
 do
@@ -137,6 +158,8 @@ output_pdf="$( mktemp --tmpdir="$tempdir" )"
 
 pdftk "${pagefile_pdfs[@]}" cat output "$output_pdf" \
     || die "Cannot combine intermediate PDF files"
+
+gui_wait_notice_end
 
 while true
 do
