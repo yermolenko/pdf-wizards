@@ -41,7 +41,7 @@ goodbye()
 
 gui_wait_notice_start()
 {
-    yes | zenity --progress --pulsate --no-cancel --auto-close --title "PDF Wizard" --text="Please wait...\n" &
+    yes | zenity --progress --pulsate --no-cancel --auto-close --title "PDF Wizard" --text="Пожалуйста, подождите...\n" &
     gui_pid=$!
     echo "gui_pid : $gui_pid"
 }
