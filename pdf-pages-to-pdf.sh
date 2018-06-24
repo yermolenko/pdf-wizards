@@ -120,7 +120,7 @@ while IFS= read -r file; do
 done < <(
     find "$pages_dir" -type f \
          \( -iname \*.jpeg -o -iname \*.jpg -o -iname \*.png -o -iname \*.pdf \) \
-         -printf 'TRUE\n%f\n' | \
+         -printf '%f\n' | sort -f | sed -e 's/^/TRUE\n/' | \
         zenity --list --checklist \
                --height=480 \
                --title "Select Files with Pages" \
