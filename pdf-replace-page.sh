@@ -2,7 +2,8 @@
 #
 #  pdf-replace-page - pdftk wrapper for page replacing/adding
 #
-#  Copyright (C) 2014, 2017 Alexander Yermolenko <yaa.mbox@gmail.com>
+#  Copyright (C) 2014, 2017, 2018 Alexander Yermolenko
+#  <yaa.mbox@gmail.com>
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -138,7 +139,11 @@ cd "$tempdir" || die "Cannot cd to temp dir."
 
 newpage_pdf="$( basename "$newpage" .pdf ).pdf"
 #echo "$newpage_pdf"
-convert -page a4 -density 72 "$newpage" "$newpage_pdf" || die "Не получилось преобразовать страницу в PDF"
+if [[ $(head -c 4 "$newpage") == "%PDF" ]]; then
+    cp "$newpage" "$newpage_pdf" || die "Не получилось подготовить PDF-страницу"
+else
+    convert -page a4 -density 72 "$newpage" "$newpage_pdf" || die "Не получилось преобразовать страницу в PDF"
+fi
 
 output_pdf="$( basename "$pdf" .pdf )-mod.pdf"
 #echo "$output_pdf"
